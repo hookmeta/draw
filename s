@@ -1,4 +1,3 @@
-
 local inputService   = game:GetService("UserInputService")
 local runService     = game:GetService("RunService")
 local tweenService   = game:GetService("TweenService")
@@ -195,7 +194,7 @@ function library:new_tab(name)
         backframe.Size = UDim2.new(0, 13 + title.TextBounds.X, 0, 3)
 
         local group = {}
-        function group:addToggle(args)
+        function group:add_toggle(args)
             if not args.flag and args.text then args.flag = args.text end
             if not args.flag then return warn("⚠️ incorrect arguments ⚠️ - missing args on recent toggle") end
             groupbox.Size += UDim2.new(0, 0, 0, 20)
@@ -302,7 +301,7 @@ function library:new_tab(name)
             library.flags[args.flag] = false
             library.options[args.flag] = {type = "toggle",changeState = toggle,skipflag = args.skipflag,oldargs = args}
             local toggle = {}
-            function toggle:addKeybind(args)
+            function toggle:add_key(args)
                 if not args.flag then return warn("⚠️ incorrect arguments ⚠️ - missing args on toggle:keybind") end
                 local next = false
                 
@@ -363,7 +362,7 @@ function library:new_tab(name)
     
                 updateValue(args.key or Enum.KeyCode.Unknown)
             end
-            function toggle:addColorpicker(args)
+            function toggle:add_colorpicker(args)
                 if not args.flag and args.text then args.flag = args.text end
                 
                 local colorpicker = Instance.new("Frame")
@@ -593,7 +592,7 @@ function library:new_tab(name)
             end
             return toggle
         end
-        function group:addButton(args)
+        function group:add_button(args)
            
             groupbox.Size += UDim2.new(0, 0, 0, 22)
 
@@ -653,7 +652,7 @@ function library:new_tab(name)
                 main.BorderColor3 = Color3.fromRGB(60, 60, 60)
 			end)
         end
-        function group:addSlider(args,sub)
+        function group:add_slider(args,sub)
             
             groupbox.Size += UDim2.new(0, 0, 0, 30)
 
@@ -790,7 +789,7 @@ function library:new_tab(name)
             library.options[args.flag] = {type = "slider",changeState = updateValue,skipflag = args.skipflag,oldargs = args}
             updateValue(args.value or 0)
         end
-        function group:addTextbox(args)
+        function group:add_textbox(args)
            
             groupbox.Size += UDim2.new(0, 0, 0, 35)
 
@@ -1141,7 +1140,7 @@ function library:new_tab(name)
             refresh(args.values)
             updateValue(args.value or not args.multiselect and args.values[1] or "abcdefghijklmnopqrstuwvxyz")
         end
-        function group:addConfigbox(args)
+        function group:add_listbox(args)
          
             groupbox.Size += UDim2.new(0, 0, 0, 138)
             library.multiZindex -= 1
@@ -1301,7 +1300,7 @@ function library:new_tab(name)
             refresh(args.values)
             updateValue(args.value or not args.multiselect and args.values[1] or "abcdefghijklmnopqrstuwvxyz")
         end
-        function group:addColorpicker(args)
+        function group:add_colorpicker(args)
           
             groupbox.Size += UDim2.new(0, 0, 0, 20)
         
@@ -1566,7 +1565,7 @@ function library:new_tab(name)
 
             updateValue(args.color or Color3.new(1,1,1))
         end
-        function group:addKeybind(args)
+        function group:add_key(args)
             if not args.flag then return warn("⚠️ incorrect arguments ⚠️ - missing args on toggle:keybind") end
             groupbox.Size += UDim2.new(0, 0, 0, 20)
             local next = false
@@ -1665,13 +1664,18 @@ function library:createConfig()
             jig[i] = v
         end
     end
-    writefile("OsirisCFGS/"..name..".cfg",game:GetService("HttpService"):JSONEncode(jig))
+    writefile("nemPF/"..name..".cfg",game:GetService("HttpService"):JSONEncode(jig))
     library:notify("Succesfully created config "..name..".cfg!")
     library:refreshConfigs()
 end
 
 function library:saveConfig()
     local name = library.flags["selected_config"]
+    if not name or type(name) ~= "string" then
+        library:notify("Invalid or missing config name!")
+        return
+    end
+
     local jig = {}
     for i,v in next, library.flags do
         if library.options[i].skipflag then continue end
@@ -1683,18 +1687,18 @@ function library:saveConfig()
             jig[i] = v
         end
     end
-    writefile("OsirisCFGS/"..name..".cfg",game:GetService("HttpService"):JSONEncode(jig))
+    writefile("nemPF/"..name..".cfg",game:GetService("HttpService"):JSONEncode(jig))
     library:notify("Succesfully updated config "..name..".cfg!")
     library:refreshConfigs()
 end
 
 function library:loadConfig()
     local name = library.flags["selected_config"]
-    if not isfile("OsirisCFGS/"..name..".cfg") then
+    if not isfile("nemPF/"..name..".cfg") then
         library:notify("Config file not found!")
         return
     end
-    local config = game:GetService("HttpService"):JSONDecode(readfile("OsirisCFGS/"..name..".cfg"))
+    local config = game:GetService("HttpService"):JSONDecode(readfile("nemPF/"..name..".cfg"))
     for i,v in next, library.options do
         spawn(function()pcall(function()
             if config[i] then
@@ -1716,10 +1720,10 @@ function library:loadConfig()
                     v.changeState(v.args.value or v.args.text or "")
                 elseif v.type == "colorpicker" then
                     v.changeState(v.args.color or Color3.new(1,1,1))
-                elseif option.type == "list" then
+                elseif v.type == "list" then
                     v.changeState("")
-                elseif option.type == "keybind" then
-                    v.changeState(v.args.key or Enum.KeyCode.Unknown)
+                elseif v.type == "keybind" then
+                    v.changeState(v.args.key or Enum.KeyCode.Unknown)                
                 end
             end
         end)end)
@@ -1729,17 +1733,15 @@ end
 
 function library:refreshConfigs()
     local tbl = {}
-    for i,v in next, listfiles("OsirisCFGS") do
+    for i,v in next, listfiles("nemPF") do
         table.insert(tbl,v)
     end
     library.options["selected_config"].refresh(tbl)
 end
 
 function library:deleteConfig()
-    if isfile("OsirisCFGS/"..library.flags["selected_config"]..".cfg") then
-        delfile("OsirisCFGS/"..library.flags["selected_config"]..".cfg")
+    if isfile("nemPF/"..library.flags["selected_config"]..".cfg") then
+        delfile("nemPF/"..library.flags["selected_config"]..".cfg")
         library:refreshConfigs()
     end
 end
-
-return library;
