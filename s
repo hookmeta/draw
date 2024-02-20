@@ -42,7 +42,7 @@ local tabviewer = menu.bg.bg.bg.bg.tabbuttons
 
 
 inputService.InputEnded:Connect(function(key)
-    if key.KeyCode == getgenv().globalsettings then
+    if key.KeyCode == getgenv().globalsettings.menu_bind then
         menu.Enabled = not menu.Enabled
         library.scrolling = false
         library.colorpicking = false
